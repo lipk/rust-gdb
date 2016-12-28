@@ -25,10 +25,8 @@ use parser;
 use msg;
 
 pub struct Debugger {
-    proc_handle: process::Child,
     stdin: BufWriter<process::ChildStdin>,
     stdout: BufReader<process::ChildStdout>,
-    stderr: BufReader<process::ChildStderr>,
 }
 
 #[derive(Debug)]
@@ -89,8 +87,6 @@ impl Debugger {
         let mut result = Debugger {
             stdin: BufWriter::new(child.stdin.take().expect("broken stdin")),
             stdout: BufReader::new(child.stdout.take().expect("broken stdout")),
-            stderr: BufReader::new(child.stderr.take().expect("broken stderr")),
-            proc_handle: child,
         };
         try!(result.read_sequence());
         Ok(result)
