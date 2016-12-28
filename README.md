@@ -7,9 +7,9 @@ moment, it can launch a GDB process, pass commands, and parse gdb's responses.
 
 Missing features:
 
-    * Handle asynchronous output from GDB (currently it's ignored)
-    * Better interface for executing commands
-    * Proper documentation
+* Handle asynchronous output from GDB (currently it's ignored)
+* Better interface for executing commands
+* Proper documentation
 
 # Usage
 
