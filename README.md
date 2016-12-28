@@ -1,11 +1,12 @@
 # Description
 
 *rust-gdb* is a WIP library for controlling GDB from Rust programs. At the
-moment, it can launch a gdb process, pass commands, and parse gdb's responses.
+moment, it can launch a GDB process, pass commands, and parse gdb's responses.
 *rust-gdb* uses GDB's
 [Machine Interface](https://sourceware.org/gdb/onlinedocs/gdb/GDB_002fMI.html).
 
 Missing features:
+
     * Handle asynchronous output from GDB (currently it's ignored)
     * Better interface for executing commands
     * Proper documentation
