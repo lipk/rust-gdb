@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::process;
 use std::io::{Write, BufReader, BufWriter, BufRead};
 use std::io;
