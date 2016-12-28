@@ -20,6 +20,14 @@ use std::str;
 use msg;
 use dbg;
 
+macro_rules! static_regex {
+    ($id:ident = $val:expr) => {
+        lazy_static! {
+            static ref $id: regex::Regex = regex::Regex::new($val).unwrap();
+        }
+    }
+}
+
 pub fn parse_line(mut line: &str) -> dbg::Result<msg::Message> {
     let mut token = None;
     if let Some((tok, rest)) = parse_token(line) {
@@ -78,8 +86,8 @@ fn parse<T: str::FromStr>(data: &str, toklen: usize) -> (T, &str) {
 }
 
 fn parse_token(data: &str) -> Option<(String, &str)> {
-    let reg = regex::Regex::new(r"^[0-9]+").unwrap();
-    if let Some((_, count)) = reg.find(data) {
+    static_regex!(RE = r"^[0-9]+");
+    if let Some((_, count)) = RE.find(data) {
         Some(parse(data, count))
     } else {
         None
@@ -87,8 +95,8 @@ fn parse_token(data: &str) -> Option<(String, &str)> {
 }
 
 fn parse_message_class(data: &str) -> Option<(msg::MessageClass, &str)> {
-    let reg = regex::Regex::new(r"^(done|connected|running|error|exit)").unwrap();
-    if let Some((_, count)) = reg.find(data) {
+    static_regex!(RE = r"^(done|connected|running|error|exit)");
+    if let Some((_, count)) = RE.find(data) {
         Some(parse(data, count))
     } else {
         None
@@ -96,8 +104,8 @@ fn parse_message_class(data: &str) -> Option<(msg::MessageClass, &str)> {
 }
 
 fn parse_varname(data: &str) -> Option<(msg::VarName, &str)> {
-    let reg = regex::Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_]*").unwrap();
-    if let Some((_, count)) = reg.find(data) {
+    static_regex!(RE = r"^[a-zA-Z_][a-zA-Z0-9_]*");
+    if let Some((_, count)) = RE.find(data) {
         Some(parse(data, count))
     } else {
         None
@@ -105,8 +113,8 @@ fn parse_varname(data: &str) -> Option<(msg::VarName, &str)> {
 }
 
 fn parse_constant(data: &str) -> Option<(msg::Value, &str)> {
-    let reg = regex::Regex::new(r#"^(".*?[^\\]"|"")"#).unwrap();
-    if let Some((_, count)) = reg.find(data) {
+    static_regex!(RE = r#"^(".*?[^\\]"|"")"#);
+    if let Some((_, count)) = RE.find(data) {
         let (value, rest) = parse(data, count);
         Some((msg::Value::String(value), rest))
     } else {

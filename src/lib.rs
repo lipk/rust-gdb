@@ -15,6 +15,8 @@
  * along with rust-gdb.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#[macro_use]
+extern crate lazy_static;
 extern crate regex;
 
 mod dbg;

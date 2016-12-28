@@ -10,3 +10,4 @@ license = "GPL-3.0"
 
 [dependencies]
 regex = "0.1"
+lazy_static = "0.2.2"
