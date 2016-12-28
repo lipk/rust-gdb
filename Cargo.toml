@@ -1,5 +1,5 @@
 [package]
-name = "gdb-mi"
+name = "gdb"
 version = "0.1.0"
 authors = ["Lipka Boldizsár <lipkab@zoho.com>"]
 
