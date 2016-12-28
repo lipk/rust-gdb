@@ -26,7 +26,7 @@ The library will look for the *gdb* binary in your path.
     use gdb;
 
     let mut debugger = gdb::Debugger::start();
-    let response = debugger.send_cmd_raw("your-command-here");
+    let response = debugger.send_cmd_raw("your-command-here\n");
 
 *send_cmd_raw* currently blocks until it gets a result record from GDB, so don't
 use async commands :)
