@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Lipka Boldizsár <lipkab@zoho.com>"]
 
 [dependencies]
+regex = "0.1"

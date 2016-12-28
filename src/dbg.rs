@@ -5,7 +5,9 @@ use std::io::{Write, BufReader, BufWriter, BufRead};
 use std::io;
 use std::convert::From;
 use std::result;
-
+use std::str;
+use parser;
+use msg;
 
 pub struct Debugger {
     proc_handle: process::Child,
@@ -17,9 +19,11 @@ pub struct Debugger {
 #[derive(Debug)]
 pub enum Error {
     IOError,
+    ParseError,
+    IgnoredOutput
 }
 
-type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 impl From<io::Error> for Error {
     fn from(_: io::Error) -> Error {
@@ -28,30 +32,33 @@ impl From<io::Error> for Error {
 }
 
 impl Debugger {
-    fn read_sequence(&mut self) -> Result<Vec<String>> {
+    fn read_sequence(&mut self) -> Result<Vec<msg::Message>> {
         let mut result = Vec::new();
         let mut line = String::new();
         try!(self.stdout.read_line(&mut line));
         while line != "(gdb) \n" {
-            result.push(line.clone());
+            match parser::parse_line(line.as_str()) {
+                Ok(resp) => result.push(resp),
+                Err(Error::IgnoredOutput) => {},
+                Err(err) => return Err(err),
+            }
             line.clear();
             try!(self.stdout.read_line(&mut line));
         }
         Ok(result)
     }
 
-    fn read_response(&mut self) -> Result<String> {
+    fn read_response(&mut self) -> Result<msg::Message> {
         loop {
             let sequence = try!(self.read_sequence());
-            for line in sequence.into_iter() {
-                if line.starts_with("^") {
-                    return Ok(line);
-                }
+            if let Some(resp) = sequence.into_iter().nth(0) {
+
+                return Ok(resp);
             }
         }
     }
 
-    pub fn send_cmd(&mut self, cmd: &str) -> Result<String> {
+    pub fn send_cmd_raw(&mut self, cmd: &str) -> Result<msg::Message> {
         try!(self.stdin.write_all(cmd.as_ref()));
         try!(self.stdin.flush());
         self.read_response()
