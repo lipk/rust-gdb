@@ -28,56 +28,159 @@ macro_rules! static_regex {
     }
 }
 
-pub fn parse_line(mut line: &str) -> dbg::Result<msg::Message> {
+pub fn parse_line(line: &str) -> Result<msg::Record, dbg::Error> {
+    if let Some(result) = parse_result_line(line) {
+        Ok(msg::Record::Result(result))
+    } else if let Some(async) = parse_async_line(line) {
+        Ok(msg::Record::Async(async))
+    } else if let Some(stream) = parse_stream_line(line) {
+        Ok(msg::Record::Stream(stream))
+    } else {
+        Err(dbg::Error::ParseError)
+    }
+}
+
+pub fn parse_result_line(mut line: &str) -> Option<msg::MessageRecord<msg::ResultClass>> {
     let mut token = None;
     if let Some((tok, rest)) = parse_token(line) {
         token = Some(tok);
         line = rest;
     }
     if !line.starts_with("^") {
-        return Err(dbg::Error::IgnoredOutput);
+        return None;
     }
     line = line.split_at(1).1;
-    let class = if let Some((class, rest)) = parse_message_class(line) {
+    let class = if let Some((class, rest)) = parse_result_class(line) {
         line = rest;
         class
     } else {
-        return Err(dbg::Error::ParseError);
+        return None
     };
     let mut result = Vec::new();
     if line.starts_with("\n") {
-        return Ok(msg::Message {
+        return Some(msg::MessageRecord::<msg::ResultClass> {
             token: token,
             class: class,
             content: result
         });
     } else if !line.starts_with(",") {
-        return Err(dbg::Error::ParseError);
+        return None;
     }
     line = line.split_at(1).1;
     if let Some((variable, rest)) = parse_variable(line) {
         line = rest;
         result.push(variable);
     } else {
-        return Err(dbg::Error::ParseError);
+        return None;
     }
     while !line.starts_with("\n") {
         if !line.starts_with(",") {
-            return Err(dbg::Error::ParseError);
+            return None;
         }
         line = line.split_at(1).1;
         if let Some((variable, rest)) = parse_variable(line) {
             line = rest;
             result.push(variable);
         } else {
-            return Err(dbg::Error::ParseError);
+            return None;
         }
     }
-    Ok(msg::Message {
+    Some(msg::MessageRecord::<msg::ResultClass> {
         token: token,
         class: class,
         content: result
     })
+}
+
+pub fn parse_async_line(mut line: &str) -> Option<msg::AsyncRecord> {
+    let mut token = None;
+    if let Some((tok, rest)) = parse_token(line) {
+        token = Some(tok);
+        line = rest;
+    }
+    let async_type = if let Some(first) = line.chars().nth(0) {
+        match first {
+            '=' | '+' | '*' => first,
+            _ => return None
+        }
+    } else {
+        return None
+    };
+    line = line.split_at(1).1;
+    let class = if let Some((class, rest)) = parse_async_class(line) {
+        line = rest;
+        class
+    } else {
+        return None
+    };
+    let mut result = Vec::new();
+    if line.starts_with("\n") {
+        let msg = msg::MessageRecord::<msg::AsyncClass> {
+            token: token,
+            class: class,
+            content: result
+        };
+        return Some(match async_type {
+            '=' => msg::AsyncRecord::Notify(msg),
+            '+' => msg::AsyncRecord::Status(msg),
+            '*' => msg::AsyncRecord::Exec(msg),
+            _ => panic!("unrecognized async type ???!!!")
+        });
+    } else if !line.starts_with(",") {
+        return None;
+    }
+    line = line.split_at(1).1;
+    if let Some((variable, rest)) = parse_variable(line) {
+        line = rest;
+        result.push(variable);
+    } else {
+        return None;
+    }
+    while !line.starts_with("\n") {
+        if !line.starts_with(",") {
+            return None;
+        }
+        line = line.split_at(1).1;
+        if let Some((variable, rest)) = parse_variable(line) {
+            line = rest;
+            result.push(variable);
+        } else {
+            return None;
+        }
+    }
+    let msg = msg::MessageRecord::<msg::AsyncClass> {
+        token: token,
+        class: class,
+        content: result
+    };
+    Some(match async_type {
+        '=' => msg::AsyncRecord::Notify(msg),
+        '+' => msg::AsyncRecord::Status(msg),
+        '*' => msg::AsyncRecord::Exec(msg),
+        _ => panic!("unrecognized async type ???!!!")
+    })
+}
+
+pub fn parse_stream_line(mut line: &str) -> Option<msg::StreamRecord> {
+    let stream_type = match line.chars().nth(0) {
+        Some(t@'~') | Some(t@'@') | Some(t@'&') => t,
+        _ => return None
+    };
+    line = line.split_at(1).1;
+    if let Some((msg::Value::String(content), rest)) = parse_constant(line) {
+        if rest == "\n" {
+            Some(match stream_type {
+                '~' => msg::StreamRecord::Console(content),
+                '@' => msg::StreamRecord::Target(content),
+                '&' => msg::StreamRecord::Log(content),
+                _ => panic!("this is weird"),
+            })
+        } else {
+            None
+        }
+    } else {
+        None
+    }
 }
 
 fn parse<T: str::FromStr>(data: &str, toklen: usize) -> (T, &str) {
@@ -94,8 +197,17 @@ fn parse_token(data: &str) -> Option<(String, &str)> {
     }
 }
 
-fn parse_message_class(data: &str) -> Option<(msg::MessageClass, &str)> {
+fn parse_result_class(data: &str) -> Option<(msg::ResultClass, &str)> {
     static_regex!(RE = r"^(done|connected|running|error|exit)");
+    if let Some((_, count)) = RE.find(data) {
+        Some(parse(data, count))
+    } else {
+        None
+    }
+}
+
+fn parse_async_class(data: &str) -> Option<(msg::AsyncClass, &str)> {
+    static_regex!(RE = r"^[-a-zA-Z]+");
     if let Some((_, count)) = RE.find(data) {
         Some(parse(data, count))
     } else {

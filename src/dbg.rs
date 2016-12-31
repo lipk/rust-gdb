@@ -45,14 +45,13 @@ impl From<io::Error> for Error {
 }
 
 impl Debugger {
-    fn read_sequence(&mut self) -> Result<Vec<msg::Message>> {
+    fn read_sequence(&mut self) -> Result<Vec<msg::Record>> {
         let mut result = Vec::new();
         let mut line = String::new();
         try!(self.stdout.read_line(&mut line));
         while line != "(gdb) \n" {
             match parser::parse_line(line.as_str()) {
                 Ok(resp) => result.push(resp),
-                Err(Error::IgnoredOutput) => {},
                 Err(err) => return Err(err),
             }
             line.clear();
@@ -61,20 +60,22 @@ impl Debugger {
         Ok(result)
     }
 
-    fn read_response(&mut self) -> Result<msg::Message> {
+    fn read_result_record(&mut self) -> Result<msg::MessageRecord<msg::ResultClass>> {
         loop {
             let sequence = try!(self.read_sequence());
-            if let Some(resp) = sequence.into_iter().nth(0) {
-
-                return Ok(resp);
+            for record in sequence.into_iter() {
+                match record {
+                    msg::Record::Result(msg) => return Ok(msg),
+                    _ => {}
+                }
             }
         }
     }
 
-    pub fn send_cmd_raw(&mut self, cmd: &str) -> Result<msg::Message> {
+    pub fn send_cmd_raw(&mut self, cmd: &str) -> Result<msg::MessageRecord<msg::ResultClass>> {
         try!(self.stdin.write_all(cmd.as_ref()));
         try!(self.stdin.flush());
-        self.read_response()
+        self.read_result_record()
     }
 
     pub fn start() -> Result<Self> {

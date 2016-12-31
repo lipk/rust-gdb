@@ -18,19 +18,46 @@
 use std::str;
 
 #[derive(Debug)]
-pub struct Message {
+pub enum Record {
+    Result(MessageRecord<ResultClass>),
+    Async(AsyncRecord),
+    Stream(StreamRecord)
+}
+
+#[derive(Debug)]
+pub struct MessageRecord<ClassT> {
     pub token: Option<String>,
-    pub class: MessageClass,
+    pub class: ClassT,
     pub content: Vec<Variable>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum MessageClass {
+pub enum ResultClass {
     Done,
     Running,
     Connected,
     Error,
-    Exit,
+    Exit
+}
+
+#[derive(Debug, PartialEq)]
+pub enum AsyncClass {
+    Stopped,
+    Other
+}
+
+#[derive(Debug)]
+pub enum AsyncRecord {
+    Exec(MessageRecord<AsyncClass>),
+    Status(MessageRecord<AsyncClass>),
+    Notify(MessageRecord<AsyncClass>),
+}
+
+#[derive(Debug)]
+pub enum StreamRecord {
+    Console(Constant),
+    Target(Constant),
+    Log(Constant),
 }
 
 #[derive(Debug)]
@@ -49,16 +76,26 @@ pub enum Value {
 pub type VarName = String;
 pub type Constant = String;
 
-impl str::FromStr for MessageClass {
+impl str::FromStr for ResultClass {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "done" => Ok(MessageClass::Done),
-            "running" => Ok(MessageClass::Running),
-            "connected" => Ok(MessageClass::Connected),
-            "error" => Ok(MessageClass::Error),
-            "exit" => Ok(MessageClass::Exit),
+            "done" => Ok(ResultClass::Done),
+            "running" => Ok(ResultClass::Running),
+            "connected" => Ok(ResultClass::Connected),
+            "error" => Ok(ResultClass::Error),
+            "exit" => Ok(ResultClass::Exit),
             _ => Err("unrecognized result class".to_string()),
+        }
+    }
+}
+
+impl str::FromStr for AsyncClass {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "stopped" => Ok(AsyncClass::Stopped),
+            _ => Ok(AsyncClass::Other),
         }
     }
 }
