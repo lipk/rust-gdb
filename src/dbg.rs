@@ -48,21 +48,21 @@ impl Debugger {
     fn read_sequence(&mut self) -> Result<Vec<msg::Record>> {
         let mut result = Vec::new();
         let mut line = String::new();
-        try!(self.stdout.read_line(&mut line));
+        self.stdout.read_line(&mut line)?;
         while line != "(gdb) \n" {
             match parser::parse_line(line.as_str()) {
                 Ok(resp) => result.push(resp),
                 Err(err) => return Err(err),
             }
             line.clear();
-            try!(self.stdout.read_line(&mut line));
+            self.stdout.read_line(&mut line)?;
         }
         Ok(result)
     }
 
     fn read_result_record(&mut self) -> Result<msg::MessageRecord<msg::ResultClass>> {
         loop {
-            let sequence = try!(self.read_sequence());
+            let sequence = self.read_sequence()?;
             for record in sequence.into_iter() {
                 match record {
                     msg::Record::Result(msg) => return Ok(msg),
@@ -73,23 +73,23 @@ impl Debugger {
     }
 
     pub fn send_cmd_raw(&mut self, cmd: &str) -> Result<msg::MessageRecord<msg::ResultClass>> {
-        try!(self.stdin.write_all(cmd.as_ref()));
-        try!(self.stdin.flush());
+        self.stdin.write_all(cmd.as_ref())?;
+        self.stdin.flush()?;
         self.read_result_record()
     }
 
     pub fn start() -> Result<Self> {
-        let mut child = try!(process::Command::new("gdb")
+        let mut child = process::Command::new("gdb")
             .args(&["--interpreter=mi"])
             .stdout(process::Stdio::piped())
             .stdin(process::Stdio::piped())
             .stderr(process::Stdio::piped())
-            .spawn());
+            .spawn()?;
         let mut result = Debugger {
             stdin: BufWriter::new(child.stdin.take().expect("broken stdin")),
             stdout: BufReader::new(child.stdout.take().expect("broken stdout")),
         };
-        try!(result.read_sequence());
+        result.read_sequence()?;
         Ok(result)
     }
 }
