@@ -18,6 +18,8 @@
 use std::process;
 use std::io::{Write, BufReader, BufWriter, BufRead};
 use std::io;
+use std::error;
+use std::fmt;
 use std::convert::From;
 use std::result;
 use std::str;
@@ -31,16 +33,40 @@ pub struct Debugger {
 
 #[derive(Debug)]
 pub enum Error {
-    IOError,
+    IOError(io::Error),
     ParseError,
     IgnoredOutput
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let err = self as &error::Error;
+        write!(f, "{}", err.description())
+    }
+}
+
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        match self {
+            &Error::IOError(ref err) => err.description(),
+            &Error::ParseError => "cannot parse response from gdb",
+            &Error::IgnoredOutput => "ignored output"
+        }
+    }
+
+    fn cause(&self) -> Option<&error::Error> {
+        match self {
+            &Error::IOError(ref err) => Some(err),
+            _ => None
+        }
+    }
 }
 
 pub type Result<T> = result::Result<T, Error>;
 
 impl From<io::Error> for Error {
-    fn from(_: io::Error) -> Error {
-        Error::IOError
+    fn from(err: io::Error) -> Error {
+        Error::IOError(err)
     }
 }
 
