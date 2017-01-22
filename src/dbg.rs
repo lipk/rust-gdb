@@ -79,7 +79,8 @@ impl Debugger {
     }
 
     pub fn start() -> Result<Self> {
-        let mut child = try!(process::Command::new("gdb")
+        let name = ::std::env::var("GDB_BINARY").unwrap_or("gdb".to_string());
+        let mut child = try!(process::Command::new(name)
             .args(&["--interpreter=mi"])
             .stdout(process::Stdio::piped())
             .stdin(process::Stdio::piped())
