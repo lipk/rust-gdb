@@ -57,7 +57,7 @@ pub fn parse_result_line(mut line: &str) -> Option<msg::MessageRecord<msg::Resul
         return None
     };
     let mut result = Vec::new();
-    if line.starts_with("\n") {
+    if line.starts_with("\n") || line.starts_with("\r\n") {
         return Some(msg::MessageRecord::<msg::ResultClass> {
             token: token,
             class: class,
@@ -73,7 +73,7 @@ pub fn parse_result_line(mut line: &str) -> Option<msg::MessageRecord<msg::Resul
     } else {
         return None;
     }
-    while !line.starts_with("\n") {
+    while !line.starts_with("\n") && !line.starts_with("\r\n") {
         if !line.starts_with(",") {
             return None;
         }
@@ -114,7 +114,7 @@ pub fn parse_async_line(mut line: &str) -> Option<msg::AsyncRecord> {
         return None
     };
     let mut result = Vec::new();
-    if line.starts_with("\n") {
+    if line.starts_with("\n") || line.starts_with("\r\n") {
         let msg = msg::MessageRecord::<msg::AsyncClass> {
             token: token,
             class: class,
@@ -136,7 +136,7 @@ pub fn parse_async_line(mut line: &str) -> Option<msg::AsyncRecord> {
     } else {
         return None;
     }
-    while !line.starts_with("\n") {
+    while !line.starts_with("\n") && !line.starts_with("\r\n") {
         if !line.starts_with(",") {
             return None;
         }
@@ -168,7 +168,7 @@ pub fn parse_stream_line(mut line: &str) -> Option<msg::StreamRecord> {
     };
     line = line.split_at(1).1;
     if let Some((msg::Value::String(content), rest)) = parse_constant(line) {
-        if rest == "\n" {
+        if rest == "\n" || rest == "\r\n" {
             Some(match stream_type {
                 '~' => msg::StreamRecord::Console(content),
                 '@' => msg::StreamRecord::Target(content),

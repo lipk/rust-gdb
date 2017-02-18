@@ -75,7 +75,7 @@ impl Debugger {
         let mut result = Vec::new();
         let mut line = String::new();
         self.stdout.read_line(&mut line)?;
-        while line != "(gdb) \n" {
+        while line != "(gdb) \n" && line != "(gdb) \r\n"{
             match parser::parse_line(line.as_str()) {
                 Ok(resp) => result.push(resp),
                 Err(err) => return Err(err),
