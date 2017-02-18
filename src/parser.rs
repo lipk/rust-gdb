@@ -216,7 +216,7 @@ fn parse_async_class(data: &str) -> Option<(msg::AsyncClass, &str)> {
 }
 
 fn parse_varname(data: &str) -> Option<(msg::VarName, &str)> {
-    static_regex!(RE = r"^[a-zA-Z_][a-zA-Z0-9_]*");
+    static_regex!(RE = r"^[a-zA-Z_][a-zA-Z0-9_-]*");
     if let Some((_, count)) = RE.find(data) {
         Some(parse(data, count))
     } else {
